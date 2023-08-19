@@ -2,21 +2,16 @@ package org.example;
 
 
 import org.example.exceptions.FormValidationFailed;
-import org.example.model.PersonalInfoFormTO;
-import org.example.model.VisaFormTO;
+import org.example.model.Settings;
 
 import java.io.IOException;
-
-import static org.example.utils.IoUtils.readPersonalInfoFromFile;
-import static org.example.utils.IoUtils.readVisaInfoFromFile;
 
 public class Main {
 
     public static void main(String[] args) throws FormValidationFailed, IOException {
-        PersonalInfoFormTO personalInfoFormTO = readPersonalInfoFromFile();
-        VisaFormTO visaFormTO = readVisaInfoFromFile();
+        Settings settings = new Settings(50, 48, 500);
 
-        TerminFinder terminFinder = new TerminFinder(personalInfoFormTO, visaFormTO);
-        terminFinder.startScanning();
+        JobFinder jobFinder = new JobFinder(settings);
+        jobFinder.startScanning();
     }
 }

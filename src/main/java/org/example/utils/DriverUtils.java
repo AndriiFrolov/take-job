@@ -1,6 +1,10 @@
 package org.example.utils;
 
 
+import io.github.bonigarcia.wdm.WebDriverManager;
+import org.example.Config;
+import org.openqa.selenium.WebDriver;
+import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeOptions;
 import org.openqa.selenium.remote.RemoteWebDriver;
 import org.openqa.selenium.support.ui.WebDriverWait;
@@ -23,18 +27,24 @@ public class DriverUtils {
     private DriverUtils() {
     }
 
-    public static RemoteWebDriver initDriver(){
+    public static WebDriver initDriver(){
         String seleniumDriverHost = System.getenv().getOrDefault("SELENIUM_GRID_HOST", "localhost");
         String remoteUrl = "http://" + seleniumDriverHost + ":4444/wd/hub";
-        RemoteWebDriver driver = null;
+        WebDriver driver = null;
         int i = 0;
         ScheduledExecutorService executor = Executors.newScheduledThreadPool(1);
         while (i < TIMEOUT_FOR_INTERACTING_WITH_ELEMENT_IN_SECONDS) {
             try {
-                logger.info("Initializing the driver. Host: {}, try: {}", seleniumDriverHost, i);
-                driver = new RemoteWebDriver(new URL(remoteUrl), getChromeOptions());
-                driver.manage().window().maximize();
-                logger.info("Driver is initialized.");
+                if (Config.IS_LOCAL_CHROME) {
+                    logger.info("Initializing local driver");
+                    WebDriverManager.chromedriver().setup();
+                    driver = new ChromeDriver(getChromeOptions());
+                } else {
+                    logger.info("Initializing remote driver. Host: {}, try: {}", seleniumDriverHost, i);
+                    driver = new RemoteWebDriver(new URL(remoteUrl), getChromeOptions());
+                    driver.manage().window().maximize();
+                    logger.info("Driver is initialized.");
+                }
                 break;
             } catch (Exception e) {
                 logger.error("Failed to initialize the driver. Reason: ", e);
@@ -51,7 +61,7 @@ public class DriverUtils {
         return driver;
     }
 
-    public static void resetDriverGracefully(RemoteWebDriver driver) {
+    public static void resetDriverGracefully(WebDriver driver) {
         String methodName = Thread.currentThread().getStackTrace()[1].getMethodName();
         logger.info("Starting to {}", methodName);
         WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(TIMEOUT_FOR_INTERACTING_WITH_ELEMENT_IN_SECONDS));
@@ -70,6 +80,11 @@ public class DriverUtils {
 
     public static ChromeOptions getChromeOptions() {
         ChromeOptions options = new ChromeOptions();
+
+        if (!Config.IS_BROWSER_VISIBLE) {
+            options.addArguments("--headless");
+        }
+        options.addArguments("--disable-dev-shm-usage");
 
         options.addArguments("--disable-dev-shm-usage");
         options.addArguments("--remote-allow-origins=*");
